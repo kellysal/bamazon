@@ -76,7 +76,7 @@ function requestProduct() {
         prompt([{
             name: "productID",
             type: "input",
-            message: "What product would you like to buy?",
+            message: "What product would you like to buy? (Enter Product ID #)",
             validate: validateInput,
             filter: Number
         }, {
@@ -109,7 +109,7 @@ function completePurchase(input) {
         let purchasePrice = res[0].price;
 
         if (input.productUnits >= stock) {
-            console.log("Out of Stock!");
+            console.log("🚫 Out of Stock!");
             requestProduct();
 
         } else {
@@ -122,7 +122,7 @@ function completePurchase(input) {
 
                 let totalPrice = input.productUnits * purchasePrice;
 
-                console.log(`Transaction Complete! Total: $ ${totalPrice}`);
+                console.log(`✅ Transaction Complete! Grand Total: $ ${totalPrice}`);
 
             });
 
