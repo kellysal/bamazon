@@ -38,16 +38,19 @@ function validateInput(value) {
 };
 
 // Display all of the items available for sale: Include the ids, names, and prices of products for sale
-let displayProducts = function () {
+function displayProducts() {
     let query = "SELECT * FROM products";
     connection.query(query, function (err, res) {
+
         if (err) throw err;
+
         for (let i = 0; i < res.length; i++) {
             console.log(`Product ID: ${res[i].item_id}`);
             console.log(`Product Name: ${res[i].product_name}`);
             console.log(`Price: ${res[i].price}`);
             console.log(`Stock Quantity: ${res[i].stock_quantity}`);
         }
+
         requestProduct();
     });
 };
@@ -55,7 +58,7 @@ let displayProducts = function () {
 // Prompt users with two messages:
 // Ask them the ID of the product they would like to buy
 // Ask how many units of the product they would like to buy
-let requestProduct = function () {
+function requestProduct() {
     inquirer.
         prompt([{
             name: "productID",
@@ -71,28 +74,8 @@ let requestProduct = function () {
             filter: Number
 
         }]).then(function (input) {
-            console.log(input);
+            completePurchase(input);
 
-            let query = "SELECT * FROM products WHERE ?";
-
-            connection.query(query, { item_id: input.productID }, function (err, res) {
-                if (err) throw err;
-
-                let available_stock = res.stock_quantity;
-                let price_per_unit = res.price;
-                let productSales = res.product_sales;
-                let productDepartment = res.department_name;
-
-                if (available_stock >= input.productUnits) {
-
-                    console.log(input);
-                    completePurchase();
-
-                } else {
-
-                    console.log("Not enough stock left!");
-                }
-            });
         });
 };
 
@@ -101,59 +84,38 @@ let requestProduct = function () {
 // If not, the app should log a phrase like `Insufficient quantity!`, and then prevent the order from going through
 
 // If your store _does_ have enough of the product, you should fulfill the customer's order
-let completePurchase = function (availableStock, price, productSales, productDepartment, selectedProductID, selectedProductUnits) {
-    let price_per_unit = res.price;
-    let productSales = res.product_sales;
-    let productDepartment = res.department_name;
+function completePurchase(input) {
+    console.log(input);
 
-    let updatedStockQuantity = availableStock - selectedProductUnits;
+    let query = "SELECT stock_quantity, price FROM products WHERE ?";
+    connection.query(query, { item_id: input.productID }, function (err, res) {
 
-    let totalPrice = price * selectedProductUnits;
-
-    let updatedProductSales = parseInt(productSales) + parseInt(totalPrice);
-
-    let query = "UPDATE products SET ? WHERE ?";
-    connection.query(query, [{
-        stock_quantity: updatedStockQuantity,
-        product_sales: updatedProductSales
-    }, {
-        item_id: selectedProductID
-    }], function (err, res) {
         if (err) throw err;
-        console.log("Your purchase is complete!");
 
-        console.log("Payment has been received: " + totalPrice);
+        let stock = res[0].stock_quantity;
+        let purchasePrice = res[0].price;
 
-        updateDepartmentRevenue(updatedProductSales, productDepartment);
+        if (input.productUnits >= stock) {
+            console.log("Out of Stock!");
+            requestProduct();
+
+        } else {
+            let newQuantity = stock - input.productUnits;
+
+            let query = "UPDATE products SET ? WHERE ?"
+            connection.query(query, [{ stock_quantity: newQuantity }, { item_id: input.productID }], function (err, res) {
+
+                if (err) throw err;
+
+                let totalPrice = input.productUnits * purchasePrice;
+
+                console.log(`Transaction Complete! Total: $ ${totalPrice}`);
+            });
+        }
     });
+
 };
 
 // Update the SQL database to reflect the remaining quantity
-let updateDepartmentRevenue = function (updatedProductSales, productDepartment) {
-    let query = "SELECT total_sales FROM departments WHERE ?";
-    connection.query(query, { department_name: productDepartment }, function (err, res) {
-        if (err) throw err;
-
-        let departmentSales = res.total_sales;
-
-        let updatedDepartmentSales = parseInt(departmentSales) + parseInt(updatedProductSales);
-
-        completeDepartmentSalesUpdate(updatedDepartmentSales, productDepartment);
-    });
-};
 
 // Once the update goes through, show the customer the total cost of their purchase
-
-let completeDepartmentSalesUpdate = function (updatedDepartment, productDepartment) {
-    let query = "UPDATE departments SET ? WHERE ?";
-    connection.query(query, [{
-        total_sales: updatedDepartment
-    }, {
-        department_name: productDepartment
-    }], function (err, res) {
-        if (err) throw err;
-
-        displayProducts();
-
-    });
-};
