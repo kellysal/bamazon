@@ -2,6 +2,7 @@
 // Require node modules
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+const Table = require('cli-table');
 
 // Connect to the database
 const connection = mysql.createConnection({
@@ -44,12 +45,24 @@ function displayProducts() {
 
         if (err) throw err;
 
+        var table = new Table({
+            head: ["Product ID", "Product Name", "Price", "Stock Available"],
+            colWidths: [15, 25, 15, 25]
+        });
+
         for (let i = 0; i < res.length; i++) {
-            console.log(`Product ID: ${res[i].item_id}`);
-            console.log(`Product Name: ${res[i].product_name}`);
-            console.log(`Price: ${res[i].price}`);
-            console.log(`Stock Quantity: ${res[i].stock_quantity}`);
+
+            table.push(
+                [res[i].item_id, res[i].product_name, res[i].price, res[i].stock_quantity]);
+
         }
+
+        console.log(table.toString());
+
+        //console.log(`Product ID: ${res[i].item_id}`);
+        //console.log(`Product Name: ${res[i].product_name}`);
+        //console.log(`Price: ${res[i].price}`);
+        //console.log(`Stock Quantity: ${res[i].stock_quantity}`);
 
         requestProduct();
     });
@@ -110,7 +123,10 @@ function completePurchase(input) {
                 let totalPrice = input.productUnits * purchasePrice;
 
                 console.log(`Transaction Complete! Total: $ ${totalPrice}`);
+
             });
+
+            displayProducts();
         }
     });
 
